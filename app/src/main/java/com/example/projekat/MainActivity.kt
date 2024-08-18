@@ -28,6 +28,11 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onPause() {
+        super.onPause()
+        println("Lav")
+    }
 }
 
 @Composable
