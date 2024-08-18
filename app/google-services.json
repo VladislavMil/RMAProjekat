@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "224696325689",
+    "project_id": "rmaprojekat-2620a",
+    "storage_bucket": "rmaprojekat-2620a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:224696325689:android:b5dae61773b55592e01fe8",
+        "android_client_info": {
+          "package_name": "com.example.projekat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQFztM1_vKFQPAki5aTX7KTYzJo6rWd9M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
