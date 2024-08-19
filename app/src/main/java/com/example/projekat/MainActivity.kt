@@ -25,8 +25,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.basicapp.components.ScreenA
-import com.example.basicapp.components.ScreenB
+import com.example.projekat.components.LoginScreen
+import com.example.projekat.components.MapScreen
+import com.example.projekat.components.ProfileScreen
+import com.example.projekat.components.SignUpScreen
 import com.example.projekat.ui.theme.MapsDemoTheme
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -48,25 +50,40 @@ class MainActivity : ComponentActivity() {
 }
 
 enum class Screens() {
-    ScreenA,
-    ScreenB
+    Login,
+    Map,
+    Profile,
+    SignUp
 }
 
 @Composable
 fun NavApp(modifier: Modifier = Modifier.fillMaxSize()) {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = Screens.ScreenA.name) {
-        composable(Screens.ScreenA.name) {
-            ScreenA(name = "student",
+    NavHost(navController = navController, startDestination = Screens.Login.name) {
+        composable(Screens.Login.name) {
+            LoginScreen(
                 modifier,
-                navigateToB = { navController.navigate(Screens.ScreenB.name)
-                })
+                navigateToMap = { navController.navigate(Screens.Map.name) },
+                navigateToSignUp = { navController.navigate(Screens.SignUp.name) }
+            )
         }
-        composable(Screens.ScreenB.name) {
-            ScreenB(list = List(100) { "$it" },
+        composable(Screens.SignUp.name) {
+            SignUpScreen(
                 modifier,
-                navigateToA = { navController.popBackStack(Screens.ScreenA.name, false)
-                })
+                navigateToLogin = { navController.navigate(Screens.Login.name) }
+            )
+        }
+        composable(Screens.Map.name) {
+            MapScreen(
+                modifier,
+                navigateToProfile = { navController.navigate(Screens.Profile.name) }
+            )
+        }
+        composable(Screens.Profile.name) {
+            ProfileScreen(
+                modifier,
+                navigateToMap = { navController.popBackStack(Screens.Map.name, false) }
+            )
         }
     }
 }
