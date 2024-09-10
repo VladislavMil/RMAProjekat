@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "224696325689",
-    "project_id": "rmaprojekat-2620a",
-    "storage_bucket": "rmaprojekat-2620a.appspot.com"
+    "project_number": "485311283733",
+    "project_id": "popravka-projekat",
+    "storage_bucket": "popravka-projekat.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:224696325689:android:b5dae61773b55592e01fe8",
+        "mobilesdk_app_id": "1:485311283733:android:135e1481c2d3b09252c41c",
         "android_client_info": {
-          "package_name": "com.example.projekat"
+          "package_name": "com.example.myapplication"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDQFztM1_vKFQPAki5aTX7KTYzJo6rWd9M"
+          "current_key": "AIzaSyBs9f8bS_mB0ea5S7CpmsIG9J_S8Bj7Kz4"
         }
       ],
       "services": {

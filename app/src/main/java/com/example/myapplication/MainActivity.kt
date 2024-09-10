@@ -1,58 +1,33 @@
-package com.example.projekat
+package com.example.myapplication
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
+import androidx.navigation.compose.rememberNavController
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import androidx.navigation.NavHost
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.example.projekat.components.LoginScreen
-import com.example.projekat.components.MapScreen
-import com.example.projekat.components.ProfileScreen
-import com.example.projekat.components.SignUpScreen
-import com.example.projekat.ui.theme.MapsDemoTheme
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapType
-import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.rememberCameraPositionState
+import com.example.myapplication.ui.screens.LoginScreen
+import com.example.myapplication.ui.screens.MapScreen
+import com.example.myapplication.ui.screens.RegistrationScreen
 
 class MainActivity : ComponentActivity() {
-
     private var isLocationPermissionGranted by mutableStateOf(false)
 
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean -> isLocationPermissionGranted = isGranted
         if (isGranted) {
-        // Location-related tasks can be performed here.
+
         } else {
-        // Handle permission denial here.
+
         }
     }
 
@@ -74,13 +49,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-enum class Screens() {
-    Login,
-    Map,
-    Profile,
-    SignUp
-}
-
 @Composable
 fun NavApp(isLocationPermissionGranted: Boolean, modifier: Modifier = Modifier.fillMaxSize()) {
     val navController = rememberNavController()
@@ -93,22 +61,23 @@ fun NavApp(isLocationPermissionGranted: Boolean, modifier: Modifier = Modifier.f
             )
         }
         composable(Screens.SignUp.name) {
-            SignUpScreen(
+            RegistrationScreen(
                 modifier,
-                navigateToLogin = { navController.navigate(Screens.Login.name) }
+                navigateToLogin = { navController.navigate(Screens.Login.name) },
+                navController
             )
         }
         composable(Screens.Map.name) {
             MapScreen(
                 modifier,
-                navigateToProfile = { navController.navigate(Screens.Profile.name) }
-            )
-        }
-        composable(Screens.Profile.name) {
-            ProfileScreen(
-                modifier,
-                navigateToMap = { navController.popBackStack(Screens.Map.name, false) }
+                navigateToProfile = { navController.navigate(Screens.SignUp.name) }
             )
         }
     }
+}
+
+enum class Screens {
+    Login,
+    SignUp,
+    Map
 }
