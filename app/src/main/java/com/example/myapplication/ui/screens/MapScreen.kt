@@ -10,9 +10,15 @@ import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -24,12 +30,16 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.maps.android.compose.*
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.ImeAction
 import coil.compose.rememberImagePainter
 import com.example.myapplication.data.firebase.FirebaseAuthManager.saveObjectToFirestore
 import com.example.myapplication.data.firebase.FirebaseAuthManager.uploadImageToFirebase
 import com.example.myapplication.data.firebase.FirebaseAuthManager
 import com.example.myapplication.data.firebase.models.MarkerData
 import com.example.myapplication.data.firebase.models.Review
+import com.google.android.gms.maps.model.CameraPosition
 import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,6 +58,10 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
     val description = remember { mutableStateOf("") }
     val imageUris = remember { mutableStateListOf<Uri?>(null, null, null) }
     val showAllReviewsDialog = remember { mutableStateOf(false) }
+
+    // Search state
+    var searchQuery by remember { mutableStateOf("") }
+    var searchResultMessage by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         val firestore = FirebaseFirestore.getInstance()
@@ -97,36 +111,79 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
     }
 
     Scaffold() { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState,
-                properties = MapProperties(
-                    mapType = MapType.NORMAL,
-                    isMyLocationEnabled = true,
-                ),
-                uiSettings = MapUiSettings(
-                    zoomControlsEnabled = true, compassEnabled = true, mapToolbarEnabled = true
-                ),
-                onMapLongClick = { latLng ->
-                    selectedLatLng.value = latLng
-                    showAddObjectDialog.value = true
-                }
-            ) {
-                markers.forEach { markerData ->
-                    Marker(
-                        state = MarkerState(position = markerData.location),
-                        title = markerData.title,
-                        snippet = "Tap to view details",
-                        onClick = {
-                            selectedMarkerData.value = markerData
-                            true
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding).background(Color.Transparent)) {
+            // Search functionality at the top
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    label = { Text("Search Marker by Title") },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                val foundMarker = markers.find { it.title.equals(searchQuery, ignoreCase = true) }
+                                if (foundMarker != null) {
+                                    cameraPositionState.position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(foundMarker.location, 15f)
+                                    searchResultMessage = ""
+                                } else {
+                                    searchResultMessage = "Marker not found"
+                                }
+                            },
+                            modifier = Modifier.size(40.dp).clip(CircleShape)
+                        ) {
+                            Icon(imageVector = Icons.Default.Search, contentDescription = "Search")
                         }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            val foundMarker = markers.find { it.title.equals(searchQuery, ignoreCase = true) }
+                            if (foundMarker != null) {
+                                cameraPositionState.position = CameraPosition.fromLatLngZoom(foundMarker.location, 15f)
+                                searchResultMessage = ""
+                            } else {
+                                searchResultMessage = "Marker not found"
+                            }
+                        }
+                    ),
+                    colors = TextFieldDefaults.textFieldColors(
+                        containerColor = Color.Transparent // Use containerColor for Material 3
                     )
+                )
+                if (searchResultMessage.isNotEmpty()) {
+                    Text(text = searchResultMessage, modifier = Modifier.padding(top = 8.dp))
+                }
+            }
+
+            // The map
+            Box(modifier = Modifier.weight(1f)) {
+                GoogleMap(
+                    modifier = Modifier.fillMaxSize(),
+                    cameraPositionState = cameraPositionState,
+                    properties = MapProperties(
+                        mapType = MapType.NORMAL,
+                        isMyLocationEnabled = true,
+                    ),
+                    uiSettings = MapUiSettings(
+                        zoomControlsEnabled = true, compassEnabled = true, mapToolbarEnabled = true
+                    ),
+                    onMapLongClick = { latLng ->
+                        selectedLatLng.value = latLng
+                        showAddObjectDialog.value = true
+                    }
+                ) {
+                    markers.forEach { markerData ->
+                        Marker(
+                            state = MarkerState(position = markerData.location),
+                            title = markerData.title,
+                            snippet = "Tap to view details",
+                            onClick = {
+                                selectedMarkerData.value = markerData
+                                true
+                            }
+                        )
+                    }
                 }
             }
 
@@ -135,19 +192,21 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
                     onDismiss = { showAddObjectDialog.value = false },
                     onSave = { title, description, imageUrls ->
                         selectedLatLng.value?.let { latLng ->
+                            val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
                             saveObjectToFirestore(
-                                FirebaseAuth.getInstance().currentUser?.uid ?: return@AddObjectDialog,
-                                title,
-                                description,
-                                latLng,
-                                imageUrls
-                            ) { success, message ->
-                                if (success) {
-                                    showAddObjectDialog.value = false
-                                } else {
-                                    Log.e("Firestore", message)
+                                title = title,
+                                description = description,
+                                location = latLng,
+                                imageUrls = imageUrls,
+                                userId = userId,
+                                onComplete = { success, message ->
+                                    if (success) {
+                                        // Handle success
+                                    } else {
+                                        // Handle failure
+                                    }
                                 }
-                            }
+                            )
                         }
                     },
                     title = title.value,
@@ -167,7 +226,7 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize()) {
         Button(
             onClick = navigateToProfile,
-            modifier = Modifier.padding(16.dp).align(Alignment.TopStart)
+            modifier = Modifier.padding(16.dp).align(Alignment.BottomStart)
         ) {
             Text("Profile")
         }
@@ -192,20 +251,17 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
 
     if (showReviewDialog.value && selectedMarkerData.value != null) {
         AddReviewDialog(
-            markerId = selectedMarkerData.value!!.id,
+            markerId = selectedMarkerData.value!!.id, // Ensure marker data is not null
             onDismiss = { showReviewDialog.value = false },
             onReviewAdded = { review ->
                 selectedMarkerData.value?.let { marker ->
                     val updatedReviews = marker.reviews.toMutableList().apply { add(review) }
                     val averageRating = updatedReviews.map { it.rating }.average()
-                    val updatedMarker = marker.copy(reviews = updatedReviews, averageRating = averageRating)
-                    markers[markers.indexOfFirst { it.id == marker.id }] = updatedMarker
-                    selectedMarkerData.value = updatedMarker
+                    selectedMarkerData.value = marker.copy(reviews = updatedReviews, averageRating = averageRating)
                 }
             }
         )
     }
-
 }
 
 @Composable
