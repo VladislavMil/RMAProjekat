@@ -3,6 +3,7 @@ package com.example.myapplication.ui.screens
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
+import android.location.Location
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
@@ -41,10 +42,15 @@ import com.example.myapplication.data.firebase.models.MarkerData
 import com.example.myapplication.data.firebase.models.Review
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.firebase.auth.FirebaseAuth
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
+fun MapScreen(
+    modifier: Modifier = Modifier,
+    userLocation: Location?,
+    navigateToProfile: () -> Unit
+) {
     val nis = LatLng(43.3209, 21.8958)
     val cameraPositionState = rememberCameraPositionState {
         position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(nis, 10f)
@@ -54,12 +60,13 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
     val showReviewDialog = remember { mutableStateOf(false) }
     val selectedLatLng = remember { mutableStateOf<LatLng?>(null) }
     val selectedMarkerData = remember { mutableStateOf<MarkerData?>(null) }
+
     val title = remember { mutableStateOf("") }
     val description = remember { mutableStateOf("") }
     val imageUris = remember { mutableStateListOf<Uri?>(null, null, null) }
+
     val showAllReviewsDialog = remember { mutableStateOf(false) }
 
-    // Search state
     var searchQuery by remember { mutableStateOf("") }
     var searchResultMessage by remember { mutableStateOf("") }
 
@@ -112,7 +119,6 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
 
     Scaffold() { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding).background(Color.Transparent)) {
-            // Search functionality at the top
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 TextField(
                     value = searchQuery,
@@ -140,7 +146,7 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
                         onSearch = {
                             val foundMarker = markers.find { it.title.equals(searchQuery, ignoreCase = true) }
                             if (foundMarker != null) {
-                                cameraPositionState.position = CameraPosition.fromLatLngZoom(foundMarker.location, 15f)
+                                cameraPositionState.position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(foundMarker.location, 15f)
                                 searchResultMessage = ""
                             } else {
                                 searchResultMessage = "Marker not found"
@@ -148,7 +154,7 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
                         }
                     ),
                     colors = TextFieldDefaults.textFieldColors(
-                        containerColor = Color.Transparent // Use containerColor for Material 3
+                        containerColor = Color.Transparent
                     )
                 )
                 if (searchResultMessage.isNotEmpty()) {
@@ -156,7 +162,6 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
                 }
             }
 
-            // The map
             Box(modifier = Modifier.weight(1f)) {
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
@@ -169,6 +174,11 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
                         zoomControlsEnabled = true, compassEnabled = true, mapToolbarEnabled = true
                     ),
                     onMapLongClick = { latLng ->
+                        title.value = ""
+                        description.value = ""
+                        imageUris.clear()
+                        imageUris.addAll(listOf(null, null, null))
+
                         selectedLatLng.value = latLng
                         showAddObjectDialog.value = true
                     }
@@ -235,6 +245,7 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
     selectedMarkerData.value?.let { markerData ->
         MarkerDetailsDialog(
             markerData = markerData,
+            userLocation = userLocation,
             currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: "",
             onDismiss = { selectedMarkerData.value = null },
             onAddReview = { showReviewDialog.value = true },
@@ -251,7 +262,7 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
 
     if (showReviewDialog.value && selectedMarkerData.value != null) {
         AddReviewDialog(
-            markerId = selectedMarkerData.value!!.id, // Ensure marker data is not null
+            markerId = selectedMarkerData.value!!.id,
             onDismiss = { showReviewDialog.value = false },
             onReviewAdded = { review ->
                 selectedMarkerData.value?.let { marker ->
@@ -350,18 +361,33 @@ fun AddObjectDialog(
 @Composable
 fun MarkerDetailsDialog(
     markerData: MarkerData,
+    userLocation: Location?,
     currentUserId: String,
     onDismiss: () -> Unit,
     onAddReview: () -> Unit,
     onShowReviews: () -> Unit
 ) {
+    val distance = userLocation?.let {
+        val markerLocation = Location("").apply {
+            latitude = markerData.location.latitude
+            longitude = markerData.location.longitude
+        }
+        it.distanceTo(markerLocation)
+    }
+
     AlertDialog(
         onDismissRequest = { onDismiss() },
         title = { Text(markerData.title) },
         text = {
             Column {
                 Text("Description: ${markerData.description}", style = MaterialTheme.typography.bodyLarge)
+
+                distance?.let {
+                    Text("Distance: ${it.roundToInt()} meters", style = MaterialTheme.typography.bodyMedium)
+                }
+
                 Text("Average Rating: ${String.format("%.1f", markerData.averageRating)}", style = MaterialTheme.typography.bodyMedium)
+
                 LazyColumn {
                     items(markerData.imageUrls) { imageUrl ->
                         imageUrl?.let {
