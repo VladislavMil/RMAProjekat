@@ -4,6 +4,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.navigation.NavController
 import com.example.myapplication.Screens
+import com.example.myapplication.data.firebase.models.Review
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -94,10 +95,10 @@ object FirebaseAuthManager {
             }
     }
 
-    fun saveObjectToFirestore(title: String, description: String, location: LatLng, imageUrls: List<String?>
-    ) {
+    fun saveObjectToFirestore(userId: String, title: String, description: String, location: LatLng, imageUrls: List<String?>, onComplete: (Boolean, String) -> Unit) {
         val firestore = FirebaseFirestore.getInstance()
         val objectData = hashMapOf(
+            "userId" to userId,
             "title" to title,
             "description" to description,
             "location" to hashMapOf(
@@ -112,10 +113,10 @@ object FirebaseAuthManager {
         firestore.collection("objects")
             .add(objectData)
             .addOnSuccessListener { documentReference ->
-                // Handle success
+                onComplete(true, "Marker successfully added")
             }
             .addOnFailureListener { e ->
-                // Handle failure
+                onComplete(false, "Error adding marker: ${e.message}")
             }
     }
 
@@ -134,6 +135,27 @@ object FirebaseAuthManager {
             .addOnFailureListener { exception ->
                 Log.e("Firebase Storage", "Error uploading image", exception)
                 onFailure(exception)
+            }
+    }
+
+    fun addReviewToFirestore(markerId: String, rating: Int, comment: String, onComplete: (Boolean, String) -> Unit) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId == null) {
+            onComplete(false, "User not authenticated")
+            return
+        }
+
+        val review = Review(userId, rating, comment)
+        FirebaseFirestore.getInstance()
+            .collection("markers")
+            .document(markerId)
+            .collection("reviews")
+            .add(review)
+            .addOnSuccessListener {
+                onComplete(true, "Review successfully added")
+            }
+            .addOnFailureListener { e ->
+                onComplete(false, "Error adding review: ${e.message}")
             }
     }
 }
