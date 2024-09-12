@@ -146,7 +146,15 @@ fun RegistrationScreen(
                 onClick = {
                     if (validateInputs()) {
                         isRegistering = true
-                        FirebaseAuthManager.registerUser(email, password, fullName, phoneNumber, imageUri!!, navController) { success, message ->
+                        FirebaseAuthManager.registerUser(
+                            email,
+                            password,
+                            fullName,
+                            phoneNumber,
+                            imageUri!!,
+                            username,
+                            navController
+                        ) { success, message ->
                             isRegistering = false
                             userMessage = message
                             if (success) {

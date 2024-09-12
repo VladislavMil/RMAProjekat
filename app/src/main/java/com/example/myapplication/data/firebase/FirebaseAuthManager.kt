@@ -15,13 +15,22 @@ import java.util.UUID
 
 object FirebaseAuthManager {
 
-    fun registerUser(email: String, password: String, fullName: String, phoneNumber: String, imageUri: Uri, navController: NavController, onComplete: (Boolean, String) -> Unit) {
+    fun registerUser(
+        email: String,
+        password: String,
+        fullName: String,
+        phoneNumber: String,
+        imageUri: Uri,
+        username: String,
+        navController: NavController,
+        onComplete: (Boolean, String) -> Unit
+    ) {
         FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password).addOnCompleteListener { authTask ->
             if (authTask.isSuccessful) {
                 val userId = authTask.result?.user?.uid
                 uploadUserImage(userId, imageUri) { imageUrl ->
                     if (imageUrl.isNotEmpty()) {
-                        saveUserDetails(userId, fullName, phoneNumber, imageUrl) { success: Boolean ->
+                        saveUserDetails(userId, fullName, phoneNumber, username, imageUrl) { success ->
                             if (success) {
                                 navController.navigate(Screens.SignUp.name)
                                 onComplete(true, "Registration Successful")
@@ -61,10 +70,18 @@ object FirebaseAuthManager {
         }
     }
 
-    private fun saveUserDetails(userId: String?, fullName: String, phoneNumber: String, imageUrl: String, onComplete: (Boolean) -> Unit) {
+    private fun saveUserDetails(
+        userId: String?,
+        fullName: String,
+        phoneNumber: String,
+        username: String,
+        imageUrl: String,
+        onComplete: (Boolean) -> Unit
+    ) {
         val userMap = hashMapOf(
             "fullName" to fullName,
             "phoneNumber" to phoneNumber,
+            "username" to username,
             "imageUrl" to imageUrl
         )
         FirebaseFirestore.getInstance().collection("users").document(userId!!)

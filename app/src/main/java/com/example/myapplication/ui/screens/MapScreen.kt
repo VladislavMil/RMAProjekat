@@ -71,7 +71,6 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
                     document.getString("imageUrl3")
                 ).filterNotNull()
 
-                // Immediately add/update marker without reviews to avoid UI delays
                 val existingIndex = markers.indexOfFirst { it.id == markerId }
                 val newMarker = MarkerData(markerId, userId, location, title, description, imageUrls, mutableListOf(), 0.0)
                 if (existingIndex >= 0) {
@@ -80,7 +79,6 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
                     markers.add(newMarker)
                 }
 
-                // Fetch reviews separately and update
                 firestore.collection("objects").document(markerId).collection("reviews").addSnapshotListener { reviewsSnapshot, reviewsException ->
                     if (reviewsException != null) {
                         Log.e("Firestore", "Failed to fetch reviews for marker $markerId", reviewsException)
@@ -89,7 +87,6 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
                     val reviews = reviewsSnapshot?.toObjects(Review::class.java) ?: listOf()
                     val averageRating = if (reviews.isNotEmpty()) reviews.map { it.rating }.average() else 0.0
 
-                    // Update just the reviews and average rating
                     markers.find { it.id == markerId }?.apply {
                         this.reviews = reviews
                         this.averageRating = averageRating
@@ -176,7 +173,6 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
         }
     }
 
-    // Show the dialog for the selected marker
     selectedMarkerData.value?.let { markerData ->
         MarkerDetailsDialog(
             markerData = markerData,
@@ -187,7 +183,6 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
         )
     }
 
-// Handle showing the reviews dialog when requested
     if (showAllReviewsDialog.value && selectedMarkerData.value != null) {
         ShowReviewsDialog(
             reviews = selectedMarkerData.value!!.reviews,
@@ -204,7 +199,6 @@ fun MapScreen(modifier: Modifier = Modifier, navigateToProfile: () -> Unit) {
                     val updatedReviews = marker.reviews.toMutableList().apply { add(review) }
                     val averageRating = updatedReviews.map { it.rating }.average()
                     val updatedMarker = marker.copy(reviews = updatedReviews, averageRating = averageRating)
-                    // Update the marker in the main list to trigger re-render
                     markers[markers.indexOfFirst { it.id == marker.id }] = updatedMarker
                     selectedMarkerData.value = updatedMarker
                 }
@@ -312,7 +306,6 @@ fun MarkerDetailsDialog(
             Column {
                 Text("Description: ${markerData.description}", style = MaterialTheme.typography.bodyLarge)
                 Text("Average Rating: ${String.format("%.1f", markerData.averageRating)}", style = MaterialTheme.typography.bodyMedium)
-                // Display images and a button to show all reviews
                 LazyColumn {
                     items(markerData.imageUrls) { imageUrl ->
                         imageUrl?.let {

@@ -18,6 +18,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.myapplication.ui.screens.LoginScreen
 import com.example.myapplication.ui.screens.MapScreen
+import com.example.myapplication.ui.screens.ProfileScreen
 import com.example.myapplication.ui.screens.RegistrationScreen
 
 class MainActivity : ComponentActivity() {
@@ -70,7 +71,12 @@ fun NavApp(isLocationPermissionGranted: Boolean, modifier: Modifier = Modifier.f
         composable(Screens.Map.name) {
             MapScreen(
                 modifier,
-                navigateToProfile = { navController.navigate(Screens.SignUp.name) }
+                navigateToProfile = { navController.navigate(Screens.Profile.name) }
+            )
+        }
+        composable(Screens.Profile.name) {
+            ProfileScreen(
+                onBackPress = { navController.popBackStack() }
             )
         }
     }
@@ -79,5 +85,6 @@ fun NavApp(isLocationPermissionGranted: Boolean, modifier: Modifier = Modifier.f
 enum class Screens {
     Login,
     SignUp,
-    Map
+    Map,
+    Profile
 }
