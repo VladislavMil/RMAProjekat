@@ -35,7 +35,8 @@ import com.google.firebase.auth.FirebaseAuth
 fun MapScreen(
     modifier: Modifier = Modifier,
     userLocation: Location?,
-    navigateToProfile: () -> Unit
+    navigateToProfile: () -> Unit,
+    navigateToFilter: () -> Unit
 ) {
     val nis = LatLng(43.3209, 21.8958)
     val cameraPositionState = rememberCameraPositionState {
@@ -79,7 +80,7 @@ fun MapScreen(
                 ).filterNotNull()
 
                 val existingIndex = markers.indexOfFirst { it.id == markerId }
-                val newMarker = MarkerData(markerId, userId, location, title, description, imageUrls, mutableListOf(), 0.0)
+                val newMarker = MarkerData(markerId, userId, location, title, description, imageUrls, mutableListOf(), 0.0f)
                 if (existingIndex >= 0) {
                     markers[existingIndex] = newMarker
                 } else {
@@ -96,7 +97,7 @@ fun MapScreen(
 
                     markers.find { it.id == markerId }?.apply {
                         this.reviews = reviews
-                        this.averageRating = averageRating
+                        this.averageRating = averageRating.toFloat()
                     }
                 }
             }
@@ -226,6 +227,12 @@ fun MapScreen(
         ) {
             Text("Profile")
         }
+        Button(
+            onClick = navigateToFilter,
+            modifier = Modifier.padding(16.dp).align(Alignment.BottomCenter)
+        ) {
+            Text("Filter")
+        }
     }
 
     selectedMarkerData.value?.let { markerData ->
@@ -254,7 +261,7 @@ fun MapScreen(
                 selectedMarkerData.value?.let { marker ->
                     val updatedReviews = marker.reviews.toMutableList().apply { add(review) }
                     val averageRating = updatedReviews.map { it.rating }.average()
-                    selectedMarkerData.value = marker.copy(reviews = updatedReviews, averageRating = averageRating)
+                    selectedMarkerData.value = marker.copy(reviews = updatedReviews, averageRating = averageRating.toFloat())
                 }
             }
         )

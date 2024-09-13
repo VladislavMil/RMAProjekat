@@ -23,8 +23,10 @@ import com.example.myapplication.ui.screens.RegistrationScreen
 import android.location.Location
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.core.app.ActivityCompat
+import com.example.myapplication.ui.screens.FilterScreen
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.type.LatLng
 
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -104,11 +106,18 @@ fun NavApp(isLocationPermissionGranted: Boolean, userLocation: Location?, modifi
         composable(Screens.Map.name) {
             MapScreen(
                 userLocation = userLocation,
-                navigateToProfile = { navController.navigate(Screens.Profile.name) }
+                navigateToProfile = { navController.navigate(Screens.Profile.name) },
+                navigateToFilter = { navController.navigate(Screens.Filter.name) }
             )
         }
         composable(Screens.Profile.name) {
             ProfileScreen(onBackPress = { navController.popBackStack() })
+        }
+        composable(Screens.Filter.name) {
+            userLocation?.let {
+                FilterScreen(userLocation = com.google.android.gms.maps.model.LatLng(it.latitude, it.longitude)
+                )
+            }
         }
     }
 }
@@ -117,5 +126,6 @@ enum class Screens {
     Login,
     SignUp,
     Map,
-    Profile
+    Profile,
+    Filter
 }
