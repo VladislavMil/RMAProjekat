@@ -26,6 +26,7 @@ import androidx.core.app.ActivityCompat
 import com.example.myapplication.ui.screens.FilterScreen
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.MapsInitializer
 import com.google.type.LatLng
 
 class MainActivity : ComponentActivity() {
@@ -42,7 +43,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        MapsInitializer.initialize(this)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         isLocationPermissionGranted = ContextCompat.checkSelfPermission(

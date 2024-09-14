@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.screens
 
+import android.graphics.BitmapFactory
 import android.location.Location
 import android.net.Uri
 import android.util.Log
@@ -20,15 +21,16 @@ import com.google.maps.android.compose.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
+import com.example.myapplication.R
 import com.example.myapplication.data.firebase.FirebaseAuthManager.saveObjectToFirestore
-import com.example.myapplication.data.firebase.models.CustomLatLng
 import com.example.myapplication.data.firebase.models.MarkerData
-import com.example.myapplication.data.firebase.models.Review
 import com.example.myapplication.ui.components.AddObjectDialog
 import com.example.myapplication.ui.components.AddReviewDialog
 import com.example.myapplication.ui.components.MarkerDetailsDialog
 import com.example.myapplication.ui.components.ShowReviewsDialog
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,6 +41,7 @@ fun MapScreen(
     navigateToProfile: () -> Unit,
     navigateToFilter: () -> Unit
 ) {
+    val context = LocalContext.current
     val nis = LatLng(43.3209, 21.8958)
     val cameraPositionState = rememberCameraPositionState {
         position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(nis, 10f)
@@ -57,6 +60,9 @@ fun MapScreen(
 
     var searchQuery by remember { mutableStateOf("") }
     var searchResultMessage by remember { mutableStateOf("") }
+
+    val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.tent)
+    val markerIcon = BitmapDescriptorFactory.fromBitmap(bitmap)
 
     LaunchedEffect(Unit) {
         val firestore = FirebaseFirestore.getInstance()
@@ -142,6 +148,7 @@ fun MapScreen(
                             state = MarkerState(position = markerData.location.toLatLng()),
                             title = markerData.title,
                             snippet = "Tap to view details",
+                            icon = markerIcon,
                             onClick = {
                                 selectedMarkerData.value = markerData
                                 true
@@ -157,7 +164,7 @@ fun MapScreen(
                     onSave = { title, description, imageUrls ->
                         selectedLatLng.value?.let { latLng ->
                             val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
-                            val nonNullImageUrls = imageUrls.filterNotNull()
+                            val nonNullImageUrls = imageUrls.filterNotNull() // Filter out null values
                             saveObjectToFirestore(
                                 title = title,
                                 description = description,
@@ -169,8 +176,6 @@ fun MapScreen(
                                         if (newMarker != null) {
                                             markers.add(newMarker)
                                         }
-                                    } else {
-                                        Log.e("Firestore", message)
                                     }
                                 }
                             )
