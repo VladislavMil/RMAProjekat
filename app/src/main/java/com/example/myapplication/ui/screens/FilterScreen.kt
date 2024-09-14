@@ -26,7 +26,6 @@ fun FilterScreen(userLocation: LatLng) {
     val markers = remember { mutableStateListOf<MarkerData>() }
     val filteredMarkers = remember { mutableStateListOf<MarkerData>() }
 
-    // Fetch markers once
     LaunchedEffect(Unit) {
         val firestore = FirebaseFirestore.getInstance()
         firestore.collection("objects")
@@ -51,7 +50,7 @@ fun FilterScreen(userLocation: LatLng) {
     LaunchedEffect(selectedDistance) {
         filteredMarkers.clear()
         markers.forEach { marker ->
-            val distance = calculateDistance(userLocation, marker.location)
+            val distance = calculateDistance(userLocation, marker.location.toLatLng())
             println("Distance to marker ${marker.title}: $distance")
             if (distance <= selectedDistance) {
                 filteredMarkers.add(marker)
@@ -95,7 +94,7 @@ fun FilterScreen(userLocation: LatLng) {
 }
 
 fun calculateDistance(loc1: LatLng, loc2: LatLng): Double {
-    val earthRadius = 6371000 // in meters
+    val earthRadius = 6371000
     val dLat = Math.toRadians(loc2.latitude - loc1.latitude)
     val dLng = Math.toRadians(loc2.longitude - loc1.longitude)
     val a = sin(dLat / 2) * sin(dLat / 2) +

@@ -5,10 +5,10 @@ import com.google.android.gms.maps.model.LatLng
 data class MarkerData(
     val id: String = "",
     val userId: String = "",
-    val location: LatLng = LatLng(0.0, 0.0),
+    val location: CustomLatLng = CustomLatLng(),
     val title: String = "",
     val description: String = "",
-    val imageUrls: List<String?> = listOf(),
-    var reviews: List<Review> = listOf(),
+    val imageUrls: List<String> = emptyList(),
+    var reviews: List<Review> = emptyList(),
     var averageRating: Float = 0.0f
 )

@@ -4,6 +4,8 @@ import android.net.Uri
 import android.util.Log
 import androidx.navigation.NavController
 import com.example.myapplication.Screens
+import com.example.myapplication.data.firebase.models.CustomLatLng
+import com.example.myapplication.data.firebase.models.MarkerData
 import com.example.myapplication.data.firebase.models.Review
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
@@ -112,28 +114,33 @@ object FirebaseAuthManager {
             }
     }
 
-    fun saveObjectToFirestore(userId: String, title: String, description: String, location: LatLng, imageUrls: List<String?>, onComplete: (Boolean, String) -> Unit) {
+    fun saveObjectToFirestore(
+        title: String,
+        description: String,
+        location: LatLng,
+        imageUrls: List<String>,
+        userId: String,
+        onComplete: (Boolean, String, MarkerData?) -> Unit
+    ) {
         val firestore = FirebaseFirestore.getInstance()
-        val objectData = hashMapOf(
-            "userId" to userId,
-            "title" to title,
-            "description" to description,
-            "location" to hashMapOf(
-                "lat" to location.latitude,
-                "lng" to location.longitude
-            ),
-            "imageUrl1" to imageUrls.getOrNull(0),
-            "imageUrl2" to imageUrls.getOrNull(1),
-            "imageUrl3" to imageUrls.getOrNull(2)
+        val newMarker = MarkerData(
+            id = firestore.collection("objects").document().id,
+            userId = userId,
+            location = CustomLatLng(location.latitude, location.longitude),
+            title = title,
+            description = description,
+            imageUrls = imageUrls,
+            reviews = mutableListOf(),
+            averageRating = 0.0f
         )
 
-        firestore.collection("objects")
-            .add(objectData)
-            .addOnSuccessListener { documentReference ->
-                onComplete(true, "Marker successfully added")
+        firestore.collection("objects").document(newMarker.id)
+            .set(newMarker)
+            .addOnSuccessListener {
+                onComplete(true, "Marker added successfully", newMarker)
             }
             .addOnFailureListener { e ->
-                onComplete(false, "Error adding marker: ${e.message}")
+                onComplete(false, e.message ?: "Error adding marker", null)
             }
     }
 

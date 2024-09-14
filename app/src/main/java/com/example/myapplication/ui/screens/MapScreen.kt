@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import com.example.myapplication.data.firebase.FirebaseAuthManager.saveObjectToFirestore
+import com.example.myapplication.data.firebase.models.CustomLatLng
 import com.example.myapplication.data.firebase.models.MarkerData
 import com.example.myapplication.data.firebase.models.Review
 import com.example.myapplication.ui.components.AddObjectDialog
@@ -59,48 +60,14 @@ fun MapScreen(
 
     LaunchedEffect(Unit) {
         val firestore = FirebaseFirestore.getInstance()
-        firestore.collection("objects").addSnapshotListener { snapshot, exception ->
-            if (exception != null) {
-                Log.e("Firestore", "Listen failed.", exception)
-                return@addSnapshotListener
+        firestore.collection("objects").get().addOnSuccessListener { snapshot ->
+            markers.clear()
+            for (document in snapshot.documents) {
+                val markerData = document.toObject(MarkerData::class.java)
+                markerData?.let { markers.add(it) }
             }
-
-            snapshot?.documents?.forEach { document ->
-                val markerId = document.id
-                val userId = document.getString("userId") ?: return@forEach
-                val lat = document.getDouble("location.lat") ?: return@forEach
-                val lng = document.getDouble("location.lng") ?: return@forEach
-                val location = LatLng(lat, lng)
-                val title = document.getString("title") ?: return@forEach
-                val description = document.getString("description") ?: return@forEach
-                val imageUrls = listOf(
-                    document.getString("imageUrl1"),
-                    document.getString("imageUrl2"),
-                    document.getString("imageUrl3")
-                ).filterNotNull()
-
-                val existingIndex = markers.indexOfFirst { it.id == markerId }
-                val newMarker = MarkerData(markerId, userId, location, title, description, imageUrls, mutableListOf(), 0.0f)
-                if (existingIndex >= 0) {
-                    markers[existingIndex] = newMarker
-                } else {
-                    markers.add(newMarker)
-                }
-
-                firestore.collection("objects").document(markerId).collection("reviews").addSnapshotListener { reviewsSnapshot, reviewsException ->
-                    if (reviewsException != null) {
-                        Log.e("Firestore", "Failed to fetch reviews for marker $markerId", reviewsException)
-                        return@addSnapshotListener
-                    }
-                    val reviews = reviewsSnapshot?.toObjects(Review::class.java) ?: listOf()
-                    val averageRating = if (reviews.isNotEmpty()) reviews.map { it.rating }.average() else 0.0
-
-                    markers.find { it.id == markerId }?.apply {
-                        this.reviews = reviews
-                        this.averageRating = averageRating.toFloat()
-                    }
-                }
-            }
+        }.addOnFailureListener { exception ->
+            Log.e("Firestore", "Error fetching markers: ${exception.localizedMessage}")
         }
     }
 
@@ -116,7 +83,7 @@ fun MapScreen(
                             onClick = {
                                 val foundMarker = markers.find { it.title.equals(searchQuery, ignoreCase = true) }
                                 if (foundMarker != null) {
-                                    cameraPositionState.position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(foundMarker.location, 15f)
+                                    cameraPositionState.position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(foundMarker.location.toLatLng(), 15f)
                                     searchResultMessage = ""
                                 } else {
                                     searchResultMessage = "Marker not found"
@@ -133,7 +100,7 @@ fun MapScreen(
                         onSearch = {
                             val foundMarker = markers.find { it.title.equals(searchQuery, ignoreCase = true) }
                             if (foundMarker != null) {
-                                cameraPositionState.position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(foundMarker.location, 15f)
+                                cameraPositionState.position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(foundMarker.location.toLatLng(), 15f)
                                 searchResultMessage = ""
                             } else {
                                 searchResultMessage = "Marker not found"
@@ -172,7 +139,7 @@ fun MapScreen(
                 ) {
                     markers.forEach { markerData ->
                         Marker(
-                            state = MarkerState(position = markerData.location),
+                            state = MarkerState(position = markerData.location.toLatLng()),
                             title = markerData.title,
                             snippet = "Tap to view details",
                             onClick = {
@@ -190,17 +157,20 @@ fun MapScreen(
                     onSave = { title, description, imageUrls ->
                         selectedLatLng.value?.let { latLng ->
                             val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+                            val nonNullImageUrls = imageUrls.filterNotNull()
                             saveObjectToFirestore(
                                 title = title,
                                 description = description,
                                 location = latLng,
-                                imageUrls = imageUrls,
+                                imageUrls = nonNullImageUrls,
                                 userId = userId,
-                                onComplete = { success, message ->
+                                onComplete = { success, message, newMarker ->
                                     if (success) {
-                                        // Handle success
+                                        if (newMarker != null) {
+                                            markers.add(newMarker)
+                                        }
                                     } else {
-                                        // Handle failure
+                                        Log.e("Firestore", message)
                                     }
                                 }
                             )
