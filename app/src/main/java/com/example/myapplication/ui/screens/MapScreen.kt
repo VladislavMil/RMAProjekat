@@ -32,6 +32,7 @@ import com.example.myapplication.ui.components.MarkerDetailsDialog
 import com.example.myapplication.ui.components.ShowReviewsDialog
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.Query
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,7 +52,7 @@ fun MapScreen(
     val showReviewDialog = remember { mutableStateOf(false) }
     val selectedLatLng = remember { mutableStateOf<LatLng?>(null) }
     val selectedMarkerData = remember { mutableStateOf<MarkerData?>(null) }
-
+    val showLeaderboardDialog = remember { mutableStateOf(false) }
     val title = remember { mutableStateOf("") }
     val description = remember { mutableStateOf("") }
     val imageUris = remember { mutableStateListOf<Uri?>(null, null, null) }
@@ -94,8 +95,7 @@ fun MapScreen(
                                 } else {
                                     searchResultMessage = "Marker not found"
                                 }
-                            },
-                            modifier = Modifier.size(40.dp).clip(CircleShape)
+                            }
                         ) {
                             Icon(imageVector = Icons.Default.Search, contentDescription = "Search")
                         }
@@ -164,21 +164,17 @@ fun MapScreen(
                     onSave = { title, description, imageUrls ->
                         selectedLatLng.value?.let { latLng ->
                             val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
-                            val nonNullImageUrls = imageUrls.filterNotNull() // Filter out null values
+                            val nonNullImageUrls = imageUrls.filterNotNull()
                             saveObjectToFirestore(
-                                title = title,
-                                description = description,
-                                location = latLng,
-                                imageUrls = nonNullImageUrls,
-                                userId = userId,
-                                onComplete = { success, message, newMarker ->
-                                    if (success) {
-                                        if (newMarker != null) {
-                                            markers.add(newMarker)
-                                        }
-                                    }
+                                title, description, latLng, nonNullImageUrls, userId
+                            ) { success, message, newMarker ->
+                                if (success) {
+                                    markers.add(newMarker!!)
+                                    showAddObjectDialog.value = false
+                                } else {
+                                    Log.e("Firestore", message)
                                 }
-                            )
+                            }
                         }
                     },
                     title = title.value,
@@ -208,6 +204,16 @@ fun MapScreen(
         ) {
             Text("Filter")
         }
+        Button(
+            onClick = { showLeaderboardDialog.value = true },
+            modifier = Modifier.padding(16.dp).align(Alignment.BottomEnd)
+        ) {
+            Text("Leaderboard")
+        }
+    }
+
+    if (showLeaderboardDialog.value) {
+        LeaderboardDialog(onDismiss = { showLeaderboardDialog.value = false })
     }
 
     selectedMarkerData.value?.let { markerData ->
@@ -241,6 +247,45 @@ fun MapScreen(
             }
         )
     }
+}
+
+@Composable
+fun LeaderboardDialog(onDismiss: () -> Unit) {
+    val users = remember { mutableStateListOf<Pair<String, Long>>() }
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        val firestore = FirebaseFirestore.getInstance()
+        firestore.collection("users").orderBy("points", Query.Direction.DESCENDING).get()
+            .addOnSuccessListener { snapshot ->
+                users.clear()
+                for (document in snapshot.documents) {
+                    val username = document.getString("username") ?: "Unknown"
+                    val points = document.getLong("points") ?: 0
+                    users.add(username to points)
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.e("Firestore", "Error fetching users: ${exception.localizedMessage}")
+            }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Leaderboard") },
+        text = {
+            Column {
+                users.forEach { (username, points) ->
+                    Text("$username: $points points")
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
 }
 
 

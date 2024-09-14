@@ -131,12 +131,14 @@ object FirebaseAuthManager {
             description = description,
             imageUrls = imageUrls,
             reviews = mutableListOf(),
-            averageRating = 0.0f
+            averageRating = 0.0f,
+            points = 10
         )
 
         firestore.collection("objects").document(newMarker.id)
             .set(newMarker)
             .addOnSuccessListener {
+                updateUserPoints(userId, 10)
                 onComplete(true, "Marker added successfully", newMarker)
             }
             .addOnFailureListener { e ->
@@ -169,17 +171,28 @@ object FirebaseAuthManager {
             return
         }
 
-        val review = Review(userId, rating, comment)
+        val review = Review(userId, rating, comment, points = 2)
         FirebaseFirestore.getInstance()
             .collection("markers")
             .document(markerId)
             .collection("reviews")
             .add(review)
             .addOnSuccessListener {
+                updateUserPoints(userId, 2)
                 onComplete(true, "Review successfully added")
             }
             .addOnFailureListener { e ->
                 onComplete(false, "Error adding review: ${e.message}")
             }
+    }
+
+    fun updateUserPoints(userId: String, points: Int) {
+        val userRef = FirebaseFirestore.getInstance().collection("users").document(userId)
+        userRef.get().addOnSuccessListener { document ->
+            if (document.exists()) {
+                val currentPoints = document.getLong("points") ?: 0
+                userRef.update("points", currentPoints + points)
+            }
+        }
     }
 }
