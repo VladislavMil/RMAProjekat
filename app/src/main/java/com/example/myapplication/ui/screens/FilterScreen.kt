@@ -2,6 +2,8 @@ package com.example.myapplication.ui.screens
 
 import android.location.Location
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -81,13 +83,43 @@ fun FilterScreen(userLocation: LatLng) {
             }
             Divider(modifier = Modifier.padding(vertical = 16.dp))
 
-            Column(modifier = Modifier.fillMaxWidth()) {
-                filteredMarkers.forEach { marker ->
-                    Row {
-                        Text(marker.title, modifier = Modifier.weight(2f))
-                        Text("${marker.averageRating}", modifier = Modifier.weight(1f))
-                    }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(filteredMarkers) { marker ->
+                    FilteredMarkerItem(marker)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun FilteredMarkerItem(marker: MarkerData) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Column {
+                Text(
+                    text = marker.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Rating: ${marker.averageRating}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
             }
         }
     }
