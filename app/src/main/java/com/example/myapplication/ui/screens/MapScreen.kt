@@ -68,14 +68,30 @@ fun MapScreen(
 
     LaunchedEffect(Unit) {
         val firestore = FirebaseFirestore.getInstance()
-        firestore.collection("objects").get().addOnSuccessListener { snapshot ->
-            markers.clear()
-            for (document in snapshot.documents) {
-                val markerData = document.toObject(MarkerData::class.java)
-                markerData?.let { markers.add(it) }
+        firestore.collection("objects").get()
+            .addOnSuccessListener { result ->
+                markers.clear()
+                for (document in result) {
+                    val marker = document.toObject(MarkerData::class.java)
+                    markers.add(marker)
+                }
             }
-        }.addOnFailureListener { exception ->
-            Log.e("Firestore", "Error fetching markers: ${exception.localizedMessage}")
+            .addOnFailureListener { exception ->
+                Log.e("Firestore", "Error fetching markers: ${exception.localizedMessage}")
+            }
+    }
+
+    LaunchedEffect(selectedMarkerData.value) {
+        selectedMarkerData.value?.let { markerData ->
+            val firestore = FirebaseFirestore.getInstance()
+            firestore.collection("objects").document(markerData.id).get()
+                .addOnSuccessListener { document ->
+                    val updatedMarkerData = document.toObject(MarkerData::class.java)
+                    selectedMarkerData.value = updatedMarkerData
+                }
+                .addOnFailureListener { exception ->
+                    Log.e("Firestore", "Error fetching marker data: ${exception.localizedMessage}")
+                }
         }
     }
 

@@ -171,19 +171,35 @@ object FirebaseAuthManager {
             return
         }
 
-        val review = Review(userId, rating, comment, points = 2)
-        FirebaseFirestore.getInstance()
-            .collection("markers")
-            .document(markerId)
-            .collection("reviews")
-            .add(review)
-            .addOnSuccessListener {
-                updateUserPoints(userId, 2)
-                onComplete(true, "Review successfully added")
+        val firestore = FirebaseFirestore.getInstance()
+        val markerRef = firestore.collection("objects").document(markerId)
+
+        markerRef.get().addOnSuccessListener { document ->
+            val marker = document.toObject(MarkerData::class.java)
+            if (marker != null && marker.reviews.any { it.userId == userId }) {
+                onComplete(false, "User has already reviewed this marker")
+            } else {
+                val review = Review(userId, rating, comment, points = 2)
+                firestore.runTransaction { transaction ->
+                    val snapshot = transaction.get(markerRef)
+                    val markerData = snapshot.toObject(MarkerData::class.java)
+                    markerData?.let {
+                        val updatedReviews = it.reviews.toMutableList().apply { add(review) }
+                        val averageRating = updatedReviews.map { it.rating }.average().toFloat()
+                        it.reviews = updatedReviews
+                        it.averageRating = averageRating
+                        transaction.set(markerRef, it)
+                    }
+                }.addOnSuccessListener {
+                    updateUserPoints(userId, 2)
+                    onComplete(true, "Review successfully added")
+                }.addOnFailureListener { e ->
+                    onComplete(false, "Error adding review: ${e.message}")
+                }
             }
-            .addOnFailureListener { e ->
-                onComplete(false, "Error adding review: ${e.message}")
-            }
+        }.addOnFailureListener { e ->
+            onComplete(false, "Error fetching marker: ${e.message}")
+        }
     }
 
     fun updateUserPoints(userId: String, points: Int) {
