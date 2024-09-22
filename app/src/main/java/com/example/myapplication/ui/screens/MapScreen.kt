@@ -34,7 +34,6 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.Query
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
     modifier: Modifier = Modifier,
@@ -115,8 +114,9 @@ fun MapScreen(
                             }
                         }
                     ),
-                    colors = TextFieldDefaults.textFieldColors(
-                        containerColor = Color.Transparent
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent
                     )
                 )
                 if (searchResultMessage.isNotEmpty()) {
@@ -204,7 +204,7 @@ fun MapScreen(
                                 reviews = updatedReviews,
                                 averageRating = averageRating.toFloat()
                             )
-                            hasReviewed.value = true  // Postavljamo da je korisnik već ostavio recenziju
+                            hasReviewed.value = true
                         }
                     }
                 )
