@@ -65,6 +65,8 @@ fun MapScreen(
     val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.tent)
     val markerIcon = BitmapDescriptorFactory.fromBitmap(bitmap)
 
+    val hasReviewed = remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         val firestore = FirebaseFirestore.getInstance()
         firestore.collection("objects").get().addOnSuccessListener { snapshot ->
@@ -151,6 +153,7 @@ fun MapScreen(
                             icon = markerIcon,
                             onClick = {
                                 selectedMarkerData.value = markerData
+                                hasReviewed.value = markerData.reviews.any { it.userId == FirebaseAuth.getInstance().currentUser?.uid }
                                 true
                             }
                         )
@@ -188,6 +191,43 @@ fun MapScreen(
                     }
                 )
             }
+
+            if (showReviewDialog.value && selectedMarkerData.value != null) {
+                AddReviewDialog(
+                    markerId = selectedMarkerData.value!!.id,
+                    onDismiss = { showReviewDialog.value = false },
+                    onReviewAdded = { review ->
+                        selectedMarkerData.value?.let { marker ->
+                            val updatedReviews = marker.reviews.toMutableList().apply { add(review) }
+                            val averageRating = updatedReviews.map { it.rating }.average()
+                            selectedMarkerData.value = marker.copy(
+                                reviews = updatedReviews,
+                                averageRating = averageRating.toFloat()
+                            )
+                            hasReviewed.value = true  // Postavljamo da je korisnik već ostavio recenziju
+                        }
+                    }
+                )
+            }
+
+            if (showAllReviewsDialog.value && selectedMarkerData.value != null) {
+                ShowReviewsDialog(
+                    reviews = selectedMarkerData.value!!.reviews,
+                    onDismiss = { showAllReviewsDialog.value = false }
+                )
+            }
+
+            selectedMarkerData.value?.let { markerData ->
+                MarkerDetailsDialog(
+                    markerData = markerData,
+                    userLocation = userLocation,
+                    currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: "",
+                    onDismiss = { selectedMarkerData.value = null },
+                    onAddReview = { showReviewDialog.value = true },
+                    onShowReviews = { showAllReviewsDialog.value = true },
+                    hasReviewed = hasReviewed
+                )
+            }
         }
     }
 
@@ -214,38 +254,6 @@ fun MapScreen(
 
     if (showLeaderboardDialog.value) {
         LeaderboardDialog(onDismiss = { showLeaderboardDialog.value = false })
-    }
-
-    selectedMarkerData.value?.let { markerData ->
-        MarkerDetailsDialog(
-            markerData = markerData,
-            userLocation = userLocation,
-            currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: "",
-            onDismiss = { selectedMarkerData.value = null },
-            onAddReview = { showReviewDialog.value = true },
-            onShowReviews = { showAllReviewsDialog.value = true }
-        )
-    }
-
-    if (showAllReviewsDialog.value && selectedMarkerData.value != null) {
-        ShowReviewsDialog(
-            reviews = selectedMarkerData.value!!.reviews,
-            onDismiss = { showAllReviewsDialog.value = false }
-        )
-    }
-
-    if (showReviewDialog.value && selectedMarkerData.value != null) {
-        AddReviewDialog(
-            markerId = selectedMarkerData.value!!.id,
-            onDismiss = { showReviewDialog.value = false },
-            onReviewAdded = { review ->
-                selectedMarkerData.value?.let { marker ->
-                    val updatedReviews = marker.reviews.toMutableList().apply { add(review) }
-                    val averageRating = updatedReviews.map { it.rating }.average()
-                    selectedMarkerData.value = marker.copy(reviews = updatedReviews, averageRating = averageRating.toFloat())
-                }
-            }
-        )
     }
 }
 

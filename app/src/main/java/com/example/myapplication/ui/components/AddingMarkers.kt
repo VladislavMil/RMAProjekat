@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -46,75 +47,80 @@ fun AddObjectDialog(
     onImageUriChange: (List<Uri?>) -> Unit
 ) {
     val context = LocalContext.current
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris: List<Uri>? ->
-        onImageUriChange(uris?.take(3) ?: listOf())
-    }
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris: List<Uri>? ->
+            onImageUriChange(uris?.take(3) ?: listOf())
+        }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add New Marker") },
-        text = {
-            Column {
-                TextField(
-                    value = title,
-                    onValueChange = onTitleChange,
-                    label = { Text("Title") },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                )
-                TextField(
-                    value = description,
-                    onValueChange = onDescriptionChange,
-                    label = { Text("Description") },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                )
-                Button(
-                    onClick = { launcher.launch("image/*") },
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text("Upload Images")
-                }
-                Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    imageUris.forEach { uri ->
-                        uri?.let {
-                            val bitmap = it.toBitmap(context)
-                            bitmap?.let { bmp ->
-                                Image(
-                                    bitmap = bmp.asImageBitmap(),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(100.dp).padding(4.dp)
-                                )
-                            }
+    AlertDialog(onDismissRequest = onDismiss, title = { Text("Add New Marker") }, text = {
+        Column {
+            TextField(
+                value = title,
+                onValueChange = onTitleChange,
+                label = { Text("Title") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+            )
+            TextField(
+                value = description,
+                onValueChange = onDescriptionChange,
+                label = { Text("Description") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+            )
+            Button(
+                onClick = { launcher.launch("image/*") },
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                Text("Upload Images")
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            ) {
+                imageUris.forEach { uri ->
+                    uri?.let {
+                        val bitmap = it.toBitmap(context)
+                        bitmap?.let { bmp ->
+                            Image(
+                                bitmap = bmp.asImageBitmap(),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .padding(4.dp)
+                            )
                         }
                     }
                 }
             }
-        },
-        confirmButton = {
-            Button(onClick = {
-                val imageUrls = mutableListOf<String?>()
-                imageUris.forEach { uri ->
-                    uri?.let {
-                        uploadImageToFirebase(it, onSuccess = { url ->
-                            imageUrls.add(url)
-                            if (imageUrls.size == imageUris.size) {
-                                onSave(title, description, imageUrls)
-                                onDismiss()
-                            }
-                        }, onFailure = { error ->
-                            Log.e("Firebase", "Image upload failed: $error")
-                        })
-                    }
-                }
-            }) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
-            Button(onClick = onDismiss) {
-                Text("Cancel")
-            }
         }
-    )
+    }, confirmButton = {
+        Button(onClick = {
+            val imageUrls = mutableListOf<String?>()
+            imageUris.forEach { uri ->
+                uri?.let {
+                    uploadImageToFirebase(it, onSuccess = { url ->
+                        imageUrls.add(url)
+                        if (imageUrls.size == imageUris.size) {
+                            onSave(title, description, imageUrls)
+                            onDismiss()
+                        }
+                    }, onFailure = { error ->
+                        Log.e("Firebase", "Image upload failed: $error")
+                    })
+                }
+            }
+        }) {
+            Text("Save")
+        }
+    }, dismissButton = {
+        Button(onClick = onDismiss) {
+            Text("Cancel")
+        }
+    })
 }
 
 @Composable
@@ -124,7 +130,8 @@ fun MarkerDetailsDialog(
     currentUserId: String,
     onDismiss: () -> Unit,
     onAddReview: () -> Unit,
-    onShowReviews: () -> Unit
+    onShowReviews: () -> Unit,
+    hasReviewed: MutableState<Boolean>
 ) {
     val distance = userLocation?.let {
         val markerLocation = Location("").apply {
@@ -134,53 +141,56 @@ fun MarkerDetailsDialog(
         it.distanceTo(markerLocation)
     }
 
-    AlertDialog(
-        onDismissRequest = { onDismiss() },
-        title = { Text(markerData.title) },
-        text = {
-            Column {
-                Text("Description: ${markerData.description}", style = MaterialTheme.typography.bodyLarge)
+    AlertDialog(onDismissRequest = { onDismiss() }, title = { Text(markerData.title) }, text = {
+        Column {
+            Text(
+                "Description: ${markerData.description}",
+                style = MaterialTheme.typography.bodyLarge
+            )
 
-                distance?.let {
-                    Text("Distance: ${it.roundToInt()} meters", style = MaterialTheme.typography.bodyMedium)
-                }
-
-                Text("Average Rating: ${String.format("%.1f", markerData.averageRating)}", style = MaterialTheme.typography.bodyMedium)
-
-                LazyColumn {
-                    items(markerData.imageUrls) { imageUrl ->
-                        imageUrl?.let {
-                            Image(
-                                painter = rememberImagePainter(it),
-                                contentDescription = "Marker Image",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(1f)
-                                    .padding(4.dp)
-                            )
-                        }
-                    }
-                }
+            distance?.let {
+                Text(
+                    "Distance: ${it.roundToInt()} meters",
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
-        },
-        confirmButton = {
-            Button(onClick = onDismiss) {
-                Text("Close")
-            }
-        },
-        dismissButton = {
-            Row {
-                if (currentUserId != markerData.userId) {
-                    Button(onClick = onAddReview) {
-                        Text("Add Review")
+
+            Text(
+                "Average Rating: ${String.format("%.1f", markerData.averageRating)}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            LazyColumn {
+                items(markerData.imageUrls) { imageUrl ->
+                    imageUrl?.let {
+                        Image(
+                            painter = rememberImagePainter(it),
+                            contentDescription = "Marker Image",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .padding(4.dp)
+                        )
                     }
-                }
-                Button(onClick = onShowReviews) {
-                    Text("Show Reviews")
                 }
             }
         }
-    )
+    }, confirmButton = {
+        Button(onClick = onDismiss) {
+            Text("Close")
+        }
+    }, dismissButton = {
+        Row {
+            if (currentUserId != markerData.userId && !hasReviewed.value) {
+                Button(onClick = onAddReview) {
+                    Text("Add Review")
+                }
+            }
+            Button(onClick = onShowReviews) {
+                Text("Show Reviews")
+            }
+        }
+    })
 }
 
 fun Uri.toBitmap(context: Context): Bitmap? {
