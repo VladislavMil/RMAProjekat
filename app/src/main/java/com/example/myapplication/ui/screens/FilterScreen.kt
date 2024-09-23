@@ -87,6 +87,14 @@ fun FilterScreen(userLocation: LatLng) {
             ) {
                 Text("Show Markers")
             }
+            Button(
+                onClick = { filteredMarkers.sortByDescending { it.averageRating } },
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(top = 8.dp)
+            ) {
+                Text("Sort by Rating")
+            }
             Spacer(modifier = Modifier.padding(vertical = 16.dp))
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
