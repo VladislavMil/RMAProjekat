@@ -27,27 +27,37 @@ object FirebaseAuthManager {
         navController: NavController,
         onComplete: (Boolean, String) -> Unit
     ) {
-        FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password).addOnCompleteListener { authTask ->
-            if (authTask.isSuccessful) {
-                val userId = authTask.result?.user?.uid
-                uploadUserImage(userId, imageUri) { imageUrl ->
-                    if (imageUrl.isNotEmpty()) {
-                        saveUserDetails(userId, fullName, phoneNumber, username, imageUrl) { success ->
-                            if (success) {
-                                navController.navigate(Screens.SignUp.name)
-                                onComplete(true, "Registration Successful")
-                            } else {
-                                onComplete(false, "Failed to save user details")
+        FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener { authTask ->
+                if (authTask.isSuccessful) {
+                    val userId = authTask.result?.user?.uid
+                    uploadUserImage(userId, imageUri) { imageUrl ->
+                        if (imageUrl.isNotEmpty()) {
+                            saveUserDetails(
+                                userId,
+                                fullName,
+                                phoneNumber,
+                                username,
+                                imageUrl
+                            ) { success ->
+                                if (success) {
+                                    navController.navigate(Screens.SignUp.name)
+                                    onComplete(true, "Registration Successful")
+                                } else {
+                                    onComplete(false, "Failed to save user details")
+                                }
                             }
+                        } else {
+                            onComplete(false, "Image upload failed")
                         }
-                    } else {
-                        onComplete(false, "Image upload failed")
                     }
+                } else {
+                    onComplete(
+                        false,
+                        "Registration failed: ${authTask.exception?.localizedMessage}"
+                    )
                 }
-            } else {
-                onComplete(false, "Registration failed: ${authTask.exception?.localizedMessage}")
             }
-        }
     }
 
     fun uploadUserImage(userId: String?, imageUri: Uri, onComplete: (imageUrl: String) -> Unit) {
@@ -146,7 +156,11 @@ object FirebaseAuthManager {
             }
     }
 
-    fun uploadImageToFirebase(uri: Uri, onSuccess: (String) -> Unit, onFailure: (Exception) -> Unit) {
+    fun uploadImageToFirebase(
+        uri: Uri,
+        onSuccess: (String) -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
         val storageRef = FirebaseStorage.getInstance().reference
         val imageRef = storageRef.child("images/${UUID.randomUUID()}")
         Log.d("Firebase Storage", "Starting image upload: $uri")
@@ -164,7 +178,12 @@ object FirebaseAuthManager {
             }
     }
 
-    fun addReviewToFirestore(markerId: String, rating: Int, comment: String, onComplete: (Boolean, String) -> Unit) {
+    fun addReviewToFirestore(
+        markerId: String,
+        rating: Int,
+        comment: String,
+        onComplete: (Boolean, String) -> Unit
+    ) {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
         if (userId == null) {
             onComplete(false, "User not authenticated")

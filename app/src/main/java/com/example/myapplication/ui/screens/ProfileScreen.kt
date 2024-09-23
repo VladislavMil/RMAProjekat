@@ -15,13 +15,10 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
 @Composable
-fun ProfileScreen(
-    modifier: Modifier = Modifier,
-    onBackPress: () -> Unit
-) {
+fun ProfileScreen(onBackPress: () -> Unit) {
+
     val user = FirebaseAuth.getInstance().currentUser
     val db = FirebaseFirestore.getInstance()
-    val context = LocalContext.current
 
     var username by remember { mutableStateOf(TextFieldValue("")) }
     var phoneNumber by remember { mutableStateOf(TextFieldValue("")) }
@@ -71,14 +68,18 @@ fun ProfileScreen(
                     value = username,
                     onValueChange = { username = it },
                     label = { Text("Username") },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
                 )
 
                 TextField(
                     value = phoneNumber,
                     onValueChange = { phoneNumber = it },
                     label = { Text("Phone Number") },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
                 )
 
                 Button(

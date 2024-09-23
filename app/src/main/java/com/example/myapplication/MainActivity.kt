@@ -7,7 +7,6 @@ import androidx.navigation.compose.rememberNavController
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,19 +26,20 @@ import com.example.myapplication.ui.screens.FilterScreen
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.MapsInitializer
-import com.google.type.LatLng
 
 class MainActivity : ComponentActivity() {
+
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var userLocation by mutableStateOf<Location?>(null)
     private var isLocationPermissionGranted by mutableStateOf(false)
 
-    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-        isLocationPermissionGranted = isGranted
-        if (isGranted) {
-            getUserLocation()
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            isLocationPermissionGranted = isGranted
+            if (isGranted) {
+                getUserLocation()
+            }
         }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,13 +71,6 @@ class MainActivity : ComponentActivity() {
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
             return
         }
         fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
@@ -87,7 +80,11 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun NavApp(isLocationPermissionGranted: Boolean, userLocation: Location?, modifier: Modifier = Modifier.fillMaxWidth()) {
+fun NavApp(
+    isLocationPermissionGranted: Boolean,
+    userLocation: Location?,
+    modifier: Modifier = Modifier.fillMaxWidth()
+) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = Screens.Login.name) {
@@ -116,7 +113,11 @@ fun NavApp(isLocationPermissionGranted: Boolean, userLocation: Location?, modifi
         }
         composable(Screens.Filter.name) {
             userLocation?.let {
-                FilterScreen(userLocation = com.google.android.gms.maps.model.LatLng(it.latitude, it.longitude)
+                FilterScreen(
+                    userLocation = com.google.android.gms.maps.model.LatLng(
+                        it.latitude,
+                        it.longitude
+                    )
                 )
             }
         }

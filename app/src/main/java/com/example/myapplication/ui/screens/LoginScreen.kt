@@ -6,7 +6,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -17,16 +16,14 @@ import androidx.compose.material3.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.navigation.NavController
-import com.example.myapplication.Screens
 import com.example.myapplication.data.firebase.FirebaseAuthManager.loginUser
 
 @Composable
-fun LoginScreen(modifier: Modifier = Modifier, navigateToMap: () -> Unit, navigateToSignUp: () -> Unit) {
+fun LoginScreen(navigateToMap: () -> Unit, navigateToSignUp: () -> Unit) {
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
-    val context = LocalContext.current
 
     Column(
         modifier = Modifier

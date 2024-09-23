@@ -20,6 +20,7 @@ import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun AddReviewDialog(markerId: String, onDismiss: () -> Unit, onReviewAdded: (Review) -> Unit) {
+
     var rating by remember { mutableStateOf(0f) }
     var comment by remember { mutableStateOf("") }
 
@@ -32,8 +33,8 @@ fun AddReviewDialog(markerId: String, onDismiss: () -> Unit, onReviewAdded: (Rev
                 Slider(
                     value = rating,
                     onValueChange = { rating = it },
-                    valueRange = 0f..5f,
-                    steps = 4
+                    valueRange = 1f..5f,
+                    steps = 3
                 )
                 TextField(
                     value = comment,
@@ -44,8 +45,16 @@ fun AddReviewDialog(markerId: String, onDismiss: () -> Unit, onReviewAdded: (Rev
         },
         confirmButton = {
             Button(onClick = {
-                val review = Review(FirebaseAuth.getInstance().currentUser?.uid ?: "", rating.toInt(), comment)
-                FirebaseAuthManager.addReviewToFirestore(markerId, rating.toInt(), comment) { success, message ->
+                val review = Review(
+                    FirebaseAuth.getInstance().currentUser?.uid ?: "",
+                    rating.toInt(),
+                    comment
+                )
+                FirebaseAuthManager.addReviewToFirestore(
+                    markerId,
+                    rating.toInt(),
+                    comment
+                ) { success, message ->
                     if (success) {
                         onReviewAdded(review)
                         onDismiss()

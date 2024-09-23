@@ -43,6 +43,7 @@ fun RegistrationScreen(
     navigateToLogin: () -> Unit,
     navController: NavController
 ) {
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
@@ -55,15 +56,16 @@ fun RegistrationScreen(
     var errorMessage by remember { mutableStateOf("") }
     val context = LocalContext.current
 
-    val pickImage = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri? ->
-        imageUri = uri
-        uri?.let {
-            val inputStream: InputStream? = context.contentResolver.openInputStream(it)
-            val bitmap = BitmapFactory.decodeStream(inputStream)
-            val resizedBitmap = Bitmap.createScaledBitmap(bitmap, 500, 500, true)
-            imageBitmap = resizedBitmap.asImageBitmap()
+    val pickImage =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri? ->
+            imageUri = uri
+            uri?.let {
+                val inputStream: InputStream? = context.contentResolver.openInputStream(it)
+                val bitmap = BitmapFactory.decodeStream(inputStream)
+                val resizedBitmap = Bitmap.createScaledBitmap(bitmap, 500, 500, true)
+                imageBitmap = resizedBitmap.asImageBitmap()
+            }
         }
-    }
 
     fun validateInputs(): Boolean {
         return email.isNotEmpty() && password.isNotEmpty() && username.isNotEmpty() &&

@@ -46,6 +46,7 @@ fun AddObjectDialog(
     imageUris: List<Uri?>,
     onImageUriChange: (List<Uri?>) -> Unit
 ) {
+
     val context = LocalContext.current
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris: List<Uri>? ->
@@ -133,6 +134,7 @@ fun MarkerDetailsDialog(
     onShowReviews: () -> Unit,
     hasReviewed: MutableState<Boolean>
 ) {
+
     val distance = userLocation?.let {
         val markerLocation = Location("").apply {
             latitude = markerData.location.latitude

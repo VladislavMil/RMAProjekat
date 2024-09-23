@@ -1,6 +1,5 @@
 package com.example.myapplication.ui.screens
 
-import android.location.Location
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,11 +19,11 @@ import kotlin.math.sqrt
 
 @Composable
 fun FilterScreen(userLocation: LatLng) {
-    var sliderPosition by remember { mutableStateOf(0f) }
-    var selectedDistance by remember { mutableStateOf(100f) }
+
+    var sliderPosition by remember { mutableFloatStateOf(0f) }
+    var selectedDistance by remember { mutableFloatStateOf(100f) }
     val distances = listOf(100f, 500f, 1000f, 5000f, 20000f)
     val distanceLabels = listOf("100m", "500m", "1km", "5km", "20km")
-
     val markers = remember { mutableStateListOf<MarkerData>() }
     val filteredMarkers = remember { mutableStateListOf<MarkerData>() }
 
@@ -62,8 +61,13 @@ fun FilterScreen(userLocation: LatLng) {
     }
 
     Scaffold {
-        Column(modifier = Modifier.padding(it).padding(16.dp)) {
-            Text("Select the distance to filter markers", style = MaterialTheme.typography.titleLarge)
+        Column(modifier = Modifier
+            .padding(it)
+            .padding(16.dp)) {
+            Text(
+                "Select the distance to filter markers",
+                style = MaterialTheme.typography.titleLarge
+            )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(distanceLabels[sliderPosition.toInt()])
                 Slider(
@@ -77,12 +81,13 @@ fun FilterScreen(userLocation: LatLng) {
             }
             Button(
                 onClick = { selectedDistance = distances[sliderPosition.toInt()] },
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 16.dp)
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(top = 16.dp)
             ) {
                 Text("Show Markers")
             }
-            Divider(modifier = Modifier.padding(vertical = 16.dp))
-
+            Spacer(modifier = Modifier.padding(vertical = 16.dp))
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)

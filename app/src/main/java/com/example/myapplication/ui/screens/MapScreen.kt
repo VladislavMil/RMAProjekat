@@ -28,6 +28,7 @@ import com.example.myapplication.data.firebase.FirebaseAuthManager.saveObjectToF
 import com.example.myapplication.data.firebase.models.MarkerData
 import com.example.myapplication.ui.components.AddObjectDialog
 import com.example.myapplication.ui.components.AddReviewDialog
+import com.example.myapplication.ui.components.LeaderboardDialog
 import com.example.myapplication.ui.components.MarkerDetailsDialog
 import com.example.myapplication.ui.components.ShowReviewsDialog
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -44,7 +45,7 @@ fun MapScreen(
     val context = LocalContext.current
     val nis = LatLng(43.3209, 21.8958)
     val cameraPositionState = rememberCameraPositionState {
-        position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(nis, 10f)
+        position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(nis, 13f)
     }
     val markers = remember { mutableStateListOf<MarkerData>() }
     val showAddObjectDialog = remember { mutableStateOf(false) }
@@ -55,15 +56,11 @@ fun MapScreen(
     val title = remember { mutableStateOf("") }
     val description = remember { mutableStateOf("") }
     val imageUris = remember { mutableStateListOf<Uri?>(null, null, null) }
-
     val showAllReviewsDialog = remember { mutableStateOf(false) }
-
     var searchQuery by remember { mutableStateOf("") }
     var searchResultMessage by remember { mutableStateOf("") }
-
     val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.tent)
     val markerIcon = BitmapDescriptorFactory.fromBitmap(bitmap)
-
     val hasReviewed = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -96,8 +93,17 @@ fun MapScreen(
     }
 
     Scaffold() { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize().padding(innerPadding).background(Color.Transparent)) {
-            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(Color.Transparent)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
                 TextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
@@ -105,9 +111,14 @@ fun MapScreen(
                     trailingIcon = {
                         IconButton(
                             onClick = {
-                                val foundMarker = markers.find { it.title.equals(searchQuery, ignoreCase = true) }
+                                val foundMarker =
+                                    markers.find { it.title.equals(searchQuery, ignoreCase = true) }
                                 if (foundMarker != null) {
-                                    cameraPositionState.position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(foundMarker.location.toLatLng(), 15f)
+                                    cameraPositionState.position =
+                                        com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(
+                                            foundMarker.location.toLatLng(),
+                                            15f
+                                        )
                                     searchResultMessage = ""
                                 } else {
                                     searchResultMessage = "Marker not found"
@@ -121,9 +132,14 @@ fun MapScreen(
                     keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(
                         onSearch = {
-                            val foundMarker = markers.find { it.title.equals(searchQuery, ignoreCase = true) }
+                            val foundMarker =
+                                markers.find { it.title.equals(searchQuery, ignoreCase = true) }
                             if (foundMarker != null) {
-                                cameraPositionState.position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(foundMarker.location.toLatLng(), 15f)
+                                cameraPositionState.position =
+                                    com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(
+                                        foundMarker.location.toLatLng(),
+                                        15f
+                                    )
                                 searchResultMessage = ""
                             } else {
                                 searchResultMessage = "Marker not found"
@@ -169,7 +185,8 @@ fun MapScreen(
                             icon = markerIcon,
                             onClick = {
                                 selectedMarkerData.value = markerData
-                                hasReviewed.value = markerData.reviews.any { it.userId == FirebaseAuth.getInstance().currentUser?.uid }
+                                hasReviewed.value =
+                                    markerData.reviews.any { it.userId == FirebaseAuth.getInstance().currentUser?.uid }
                                 true
                             }
                         )
@@ -214,7 +231,8 @@ fun MapScreen(
                     onDismiss = { showReviewDialog.value = false },
                     onReviewAdded = { review ->
                         selectedMarkerData.value?.let { marker ->
-                            val updatedReviews = marker.reviews.toMutableList().apply { add(review) }
+                            val updatedReviews =
+                                marker.reviews.toMutableList().apply { add(review) }
                             val averageRating = updatedReviews.map { it.rating }.average()
                             selectedMarkerData.value = marker.copy(
                                 reviews = updatedReviews,
@@ -247,69 +265,32 @@ fun MapScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Button(
-            onClick = navigateToProfile,
-            modifier = Modifier.padding(16.dp).align(Alignment.BottomStart)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Profile")
-        }
-        Button(
-            onClick = navigateToFilter,
-            modifier = Modifier.padding(16.dp).align(Alignment.BottomCenter)
-        ) {
-            Text("Filter")
-        }
-        Button(
-            onClick = { showLeaderboardDialog.value = true },
-            modifier = Modifier.padding(16.dp).align(Alignment.BottomEnd)
-        ) {
-            Text("Leaderboard")
+            Button(onClick = navigateToProfile) {
+                Text("Profile")
+            }
+            Button(onClick = navigateToFilter) {
+                Text("Filter")
+            }
+            Button(onClick = { showLeaderboardDialog.value = true }) {
+                Text("Leaderboard")
+            }
         }
     }
 
     if (showLeaderboardDialog.value) {
         LeaderboardDialog(onDismiss = { showLeaderboardDialog.value = false })
     }
-}
-
-@Composable
-fun LeaderboardDialog(onDismiss: () -> Unit) {
-    val users = remember { mutableStateListOf<Pair<String, Long>>() }
-    val context = LocalContext.current
-
-    LaunchedEffect(Unit) {
-        val firestore = FirebaseFirestore.getInstance()
-        firestore.collection("users").orderBy("points", Query.Direction.DESCENDING).get()
-            .addOnSuccessListener { snapshot ->
-                users.clear()
-                for (document in snapshot.documents) {
-                    val username = document.getString("username") ?: "Unknown"
-                    val points = document.getLong("points") ?: 0
-                    users.add(username to points)
-                }
-            }
-            .addOnFailureListener { exception ->
-                Log.e("Firestore", "Error fetching users: ${exception.localizedMessage}")
-            }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Leaderboard") },
-        text = {
-            Column {
-                users.forEach { (username, points) ->
-                    Text("$username: $points points")
-                }
-            }
-        },
-        confirmButton = {
-            Button(onClick = onDismiss) {
-                Text("Close")
-            }
-        }
-    )
 }
 
 
